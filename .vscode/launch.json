@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch ProCart Backend",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend/ecommerce-backend/ecommerce-backend",
+            "mainClass": "com.procart.EcommerceBackendApplication",
+            "envFile": "${workspaceFolder}/backend/ecommerce-backend/ecommerce-backend/.env"
+        }
+    ]
+}
