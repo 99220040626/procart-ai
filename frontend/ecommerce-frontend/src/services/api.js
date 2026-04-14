@@ -1,9 +1,9 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// 🚀 PROXY ROUTING: Automatically works on Laptop & Phone without hardcoding IPs!
+// 🚀 CLOUD ROUTING: Hardwired directly to your live Render Java Backend
 const API = axios.create({
-    baseURL: '/api', 
+    baseURL: 'https://procart-ai.onrender.com/api', 
     headers: {
         'Content-Type': 'application/json'
     }
