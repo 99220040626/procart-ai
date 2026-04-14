@@ -1,0 +1,22 @@
+# Ignore Environment Variables and VS Code Settings
+.env
+.vscode/launch.json
+
+# Ignore Uploaded Files (Images, 3D Models)
+backend/uploads/
+
+# Standard Java/Spring Boot Ignores
+target/
+*.jar
+*.war
+.classpath
+.project
+.settings/
+
+# Security: Prevent secrets from being uploaded
+.env
+.env.*
+*.env
+
+# VS Code specific files
+.vscode/

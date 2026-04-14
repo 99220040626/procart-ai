@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.procart.grpc";
+option java_outer_classname = "FraudProto";
+
+service FraudService {
+  rpc CheckFraud (FraudRequest) returns (FraudResponse);
+}
+
+message FraudRequest {
+  float amount = 1;
+  int32 quantity = 2;
+  string ip_address = 3;
+  int32 recent_orders = 4;
+}
+
+message FraudResponse {
+  float risk_score = 1;
+  string recommendation = 2;
+}
