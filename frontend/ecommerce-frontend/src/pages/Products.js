@@ -156,17 +156,21 @@ export default function Products() {
         try {
             const res = await API.get(`/products/paged?page=${pageNumber}&size=12`);
             setProducts(prev => {
-                const newData = pageNumber === 0 ? res.data.content : [...prev, ...res.data.content.filter(newP => !prev.some(p => p.id === newP.id))];
+                // 🚀 FIX: Added fallback empty arrays (|| []) to prevent undefined array crashes
+                const newData = pageNumber === 0 ? (res.data?.content || []) : [...prev, ...(res.data?.content || []).filter(newP => !prev.some(p => p.id === newP.id))];
                 
                 const viewers = {};
-                newData.forEach(p => { viewers[p.id] = Math.floor(Math.random() * 42) + 3; });
+                // 🚀 FIX: Added optional chaining (?) to prevent forEach crash if newData is somehow undefined
+                newData?.forEach(p => { viewers[p.id] = Math.floor(Math.random() * 42) + 3; });
                 setActiveViewers(v => ({...v, ...viewers}));
 
                 return newData;
             });
-            setHasMore(!res.data.last);
+            // 🚀 FIX: Safely check for .last
+            setHasMore(!res.data?.last);
             if (pageNumber === 0) {
-                const uniqueCategories = ['All', ...new Set(res.data.content.map(p => p.category).filter(Boolean))];
+                // 🚀 FIX: Safely map through the content
+                const uniqueCategories = ['All', ...new Set((res.data?.content || []).map(p => p.category).filter(Boolean))];
                 if (uniqueCategories.length > 1) setAvailableCategories(uniqueCategories);
             }
         } catch (error) { toast.error("Network Error: Failed to sync matrix."); } 
@@ -200,7 +204,8 @@ export default function Products() {
         setIsInitialLoading(true); setIsFiltering(true); setShowMobileFilters(false);
         try {
             const res = await API.get(`/products/filter?category=${category}&minPrice=${minPrice}&maxPrice=${maxPrice}`);
-            setProducts(res.data); setHasMore(false); toast.success("Matrix parameters updated! 🎛️");
+            // 🚀 FIX: Added fallback array
+            setProducts(res.data || []); setHasMore(false); toast.success("Matrix parameters updated! 🎛️");
         } catch (error) { toast.error("Failed to compile filters."); } 
         finally { setIsInitialLoading(false); }
     };
@@ -277,7 +282,8 @@ export default function Products() {
         } catch (err) { toast.error("Transmission failed."); }
     };
 
-    let processedProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    // 🚀 FIX: Added (products || []) to safeguard the .filter function
+    let processedProducts = (products || []).filter(p => p?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
     if (sortType === 'priceLow') processedProducts.sort((a, b) => a.price - b.price);
     else if (sortType === 'priceHigh') processedProducts.sort((a, b) => b.price - a.price);
     else processedProducts.sort((a, b) => b.id - a.id); 
