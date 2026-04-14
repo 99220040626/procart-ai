@@ -98,7 +98,7 @@ function OrderTracking() {
         if (userId) fetchOrdersAndGeocode();
 
         // 📡 Live WebSocket Tracking
-        const socketUrl = window.location.protocol === 'https:' ? `https://${window.location.host}/ws` : 'http://localhost:8080/ws';
+        const socketUrl = window.location.protocol === 'https:' ? `https://${window.location.host}/ws` : 'https://procart-ai.onrender.com/ws';
         const socket = new SockJS(socketUrl);
         const stompClient = new Client({
             webSocketFactory: () => socket,

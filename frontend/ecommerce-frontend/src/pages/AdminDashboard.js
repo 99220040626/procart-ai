@@ -59,7 +59,7 @@ function AdminDashboard() {
 
         const socketUrl = window.location.protocol === 'https:' 
             ? `https://${window.location.host}/ws` 
-            : 'http://localhost:8080/ws';
+            : 'https://procart-ai.onrender.com/ws';
 
         const socket = new SockJS(socketUrl);
 

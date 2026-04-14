@@ -13,7 +13,7 @@ export default function CheckoutModal({ isOpen, onClose, onConfirm, totalAmount 
         try {
             const currentUserId = localStorage.getItem('userId') || "GUEST_123";
             
-            const response = await fetch('http://localhost:8080/api/payment/phonepe-init', {
+            const response = await fetch('https://procart-ai.onrender.com/api/payment/phonepe-init', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ amount: totalAmount, userId: currentUserId })

@@ -95,7 +95,7 @@ function Wishlist() {
 
                                 <div className="aspect-square w-full overflow-hidden rounded-2xl bg-gray-50 dark:bg-black/40 mb-6 flex items-center justify-center transition-colors duration-300">
                                     {product.imageUrl ? (
-                                        <img src={`http://localhost:8080/uploads/${product.imageUrl}`} alt={product.name} className="h-full w-full object-cover" />
+                                        <img src={`https://procart-ai.onrender.com/uploads/${product.imageUrl}`} alt={product.name} className="h-full w-full object-cover" />
                                     ) : (
                                         <div className="text-6xl">📦</div>
                                     )}

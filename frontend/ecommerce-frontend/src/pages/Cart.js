@@ -105,7 +105,7 @@ function Cart() {
 
     const getImageUrl = (url) => {
         if (!url) return '';
-        return url.startsWith('http') ? url : `http://localhost:8080/uploads/${url}`;
+        return url.startsWith('http') ? url : `https://procart-ai.onrender.com/uploads/${url}`;
     };
 
     const getCompiledAddress = () => {

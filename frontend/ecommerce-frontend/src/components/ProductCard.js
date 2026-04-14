@@ -9,7 +9,7 @@ function ProductCard({ product }) {
   
   // Safely handle image URLs (works for both external links and local uploads)
   const imageUrl = product.imageUrl 
-    ? (product.imageUrl.startsWith('http') ? product.imageUrl : `http://localhost:8080/uploads/${product.imageUrl}`) 
+    ? (product.imageUrl.startsWith('http') ? product.imageUrl : `https://procart-ai.onrender.com/uploads/${product.imageUrl}`) 
     : null;
 
   // Intercept the click so we don't accidentally navigate to the product page when adding to cart
