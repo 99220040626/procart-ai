@@ -45,7 +45,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers(
-                    "/api/auth/**", "/api/products/**", "/uploads/**", "/api/orders/**", 
+                    "https://procart-ai.onrender.com/api/auth/register/**", "/api/products/**", "/uploads/**", "/api/orders/**", 
                     "/api/promo/**", "/api/email/**", "/api/analytics/**", "/ws/**", 
                     "/api/payment/**", "/api/qa/**", "/api/chat/**", "/api/voice/**",
                     "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"    

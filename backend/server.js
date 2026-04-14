@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
+app.use("https://procart-ai.onrender.com/api/auth/register", authRoutes);
 app.use("/api/orders", ordersRoutes); // ✅ BEFORE listen
 
 app.listen(5000, () => {

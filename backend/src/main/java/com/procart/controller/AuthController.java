@@ -19,7 +19,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("https://procart-ai.onrender.com/api/auth/register")
 public class AuthController {
 
     @Autowired
