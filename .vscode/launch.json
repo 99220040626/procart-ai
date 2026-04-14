@@ -5,9 +5,9 @@
             "type": "java",
             "name": "Launch ProCart Backend",
             "request": "launch",
-            "cwd": "${workspaceFolder}/backend/ecommerce-backend/ecommerce-backend",
+            "cwd": "${workspaceFolder}/backend",
             "mainClass": "com.procart.EcommerceBackendApplication",
-            "envFile": "${workspaceFolder}/backend/ecommerce-backend/ecommerce-backend/.env"
+            "envFile": "${workspaceFolder}/backend/.env"
         }
     ]
 }

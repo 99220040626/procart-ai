@@ -14,7 +14,8 @@ public class UserAddress {
     private String label; // e.g., "Home", "Office", "Parents"
 
     // 🛡️ ENCRYPTED: Street Address
-    @Column(name = "street_address")
+    // 🚀 FIX: Added columnDefinition = "TEXT" to prevent Data Truncation when encrypted!
+    @Column(name = "street_address", columnDefinition = "TEXT")
     @ColumnTransformer(
         read = "CAST(AES_DECRYPT(UNHEX(street_address), 'ProCartSuperSecretKey2026') AS CHAR)",
         write = "HEX(AES_ENCRYPT(?, 'ProCartSuperSecretKey2026'))"

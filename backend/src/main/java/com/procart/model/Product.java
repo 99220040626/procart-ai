@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 
 @Entity
 public class Product implements Serializable { 
@@ -50,13 +51,17 @@ public class Product implements Serializable {
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean isActive = true;
 
+    // 🚀 FIX: Added @OrderColumn to generate a Primary Key for Aiven
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "product_gallery", joinColumns = @JoinColumn(name = "product_id"))
+    @OrderColumn(name = "gallery_id") 
     @Column(name = "image_url")
     private List<String> galleryImages = new ArrayList<>();
 
+    // 🚀 FIX: Added @OrderColumn to generate a Primary Key for Aiven
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "product_variants", joinColumns = @JoinColumn(name = "product_id"))
+    @OrderColumn(name = "variant_id") 
     private List<ProductVariant> variants = new ArrayList<>();
 
     public Product() {}
