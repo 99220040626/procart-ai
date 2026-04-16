@@ -9,17 +9,19 @@ import { OfflineStorage } from '../services/OfflineStorage';
 // 🌌 CORE OBSERVATION HOOKS
 // ==========================================
 
-const useIntersectionObserver = (options = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }) => {
+// 🚀 FIX #1: options object was recreated on every render causing infinite useEffect loop
+// Solution: hardcode the options inside the effect so the dependency array stays stable
+const useIntersectionObserver = () => {
     const [isVisible, setIsVisible] = useState(false);
     const domRef = useRef(null);
     useEffect(() => {
         const observer = new IntersectionObserver(([entry]) => {
             if (entry.isIntersecting) setIsVisible(true);
-        }, options);
+        }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
         const currentRef = domRef.current;
         if (currentRef) observer.observe(currentRef);
         return () => { if (currentRef) observer.unobserve(currentRef); };
-    }, [options]);
+    }, []); // ✅ stable empty dep array — options are now literals inside the effect
     return [domRef, isVisible];
 };
 
@@ -27,10 +29,12 @@ const useIntersectionObserver = (options = { threshold: 0.1, rootMargin: "0px 0p
 // 🧩 PREMIUM MICRO-COMPONENTS
 // ==========================================
 
+// 🚀 FIX #2: Move SCRAMBLE_CHARS outside component so it's not re-created on every render
+const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+
 const ScrambleText = ({ text }) => {
     const [displayText, setDisplayText] = useState(text);
     const [isHovered, setIsHovered] = useState(false);
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
     
     useEffect(() => {
         if (!isHovered) { setDisplayText(text); return; }
@@ -38,13 +42,13 @@ const ScrambleText = ({ text }) => {
         const interval = setInterval(() => {
             setDisplayText(text.split('').map((letter, index) => {
                 if (index < iteration) return text[index];
-                return chars[Math.floor(Math.random() * chars.length)];
+                return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
             }).join(''));
             if (iteration >= text.length) clearInterval(interval);
             iteration += 1 / 3; 
         }, 30);
         return () => clearInterval(interval);
-    }, [isHovered, text]);
+    }, [isHovered, text]); // ✅ chars no longer a dependency (it's a module-level constant)
 
     return <span onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} className="inline-block transition-all">{displayText}</span>;
 };
@@ -129,6 +133,9 @@ export default function Products() {
     const [hasMore, setHasMore] = useState(true);
     const [isFiltering, setIsFiltering] = useState(false);
 
+    // 🚀 FIX #3: resetKey forces re-fetch when resetFilters is called but page is already 0
+    const [resetKey, setResetKey] = useState(0);
+
     // Q&A Modal
     const [qaModalProduct, setQaModalProduct] = useState(null); 
     const [qaList, setQaList] = useState([]); 
@@ -142,10 +149,19 @@ export default function Products() {
     const { addToCart } = useCart();
     const userId = localStorage.getItem('userId');
 
+    // 🚀 FIX #4: IMAGE URL FIX
+    // The API base URL must prefix relative image paths.
+    // Previously: `/uploads/${imageName}` — this points to the frontend domain (Vercel), not the backend.
+    // Fix: use the API base URL for relative paths, and pass through absolute URLs unchanged.
     const getImageUrl = (imageName) => {
         if (!imageName) return null;
-        if (imageName.startsWith('http')) return imageName;
-        return `/uploads/${imageName}`;
+        // Already a full URL (http/https) — return as-is
+        if (imageName.startsWith('http://') || imageName.startsWith('https://')) return imageName;
+        // Already a root-relative path starting with /uploads — prefix with API base URL
+        const apiBase = (API.defaults?.baseURL || '').replace(/\/api$/, '').replace(/\/$/, '');
+        if (imageName.startsWith('/')) return `${apiBase}${imageName}`;
+        // Bare filename — build the full backend uploads path
+        return `${apiBase}/uploads/${imageName}`;
     };
 
     // 📡 API FETCH LOGIC
@@ -156,20 +172,18 @@ export default function Products() {
         try {
             const res = await API.get(`/products/paged?page=${pageNumber}&size=12`);
             setProducts(prev => {
-                // 🚀 FIX: Added fallback empty arrays (|| []) to prevent undefined array crashes
-                const newData = pageNumber === 0 ? (res.data?.content || []) : [...prev, ...(res.data?.content || []).filter(newP => !prev.some(p => p.id === newP.id))];
+                const newData = pageNumber === 0
+                    ? (res.data?.content || [])
+                    : [...prev, ...(res.data?.content || []).filter(newP => !prev.some(p => p.id === newP.id))];
                 
                 const viewers = {};
-                // 🚀 FIX: Added optional chaining (?) to prevent forEach crash if newData is somehow undefined
                 newData?.forEach(p => { viewers[p.id] = Math.floor(Math.random() * 42) + 3; });
                 setActiveViewers(v => ({...v, ...viewers}));
 
                 return newData;
             });
-            // 🚀 FIX: Safely check for .last
             setHasMore(!res.data?.last);
             if (pageNumber === 0) {
-                // 🚀 FIX: Safely map through the content
                 const uniqueCategories = ['All', ...new Set((res.data?.content || []).map(p => p.category).filter(Boolean))];
                 if (uniqueCategories.length > 1) setAvailableCategories(uniqueCategories);
             }
@@ -186,7 +200,8 @@ export default function Products() {
         } catch (error) { console.error("Wishlist sync failed", error); }
     }, [userId]);
 
-    useEffect(() => { if (!isFiltering) fetchProductsPage(page); }, [page, isFiltering, fetchProductsPage]);
+    // 🚀 FIX #5: Added resetKey to dependency array so resetting to page 0 always re-fetches
+    useEffect(() => { if (!isFiltering) fetchProductsPage(page); }, [page, isFiltering, fetchProductsPage, resetKey]);
     useEffect(() => { fetchWishlist(); }, [fetchWishlist]);
 
     const observer = useRef();
@@ -204,15 +219,19 @@ export default function Products() {
         setIsInitialLoading(true); setIsFiltering(true); setShowMobileFilters(false);
         try {
             const res = await API.get(`/products/filter?category=${category}&minPrice=${minPrice}&maxPrice=${maxPrice}`);
-            // 🚀 FIX: Added fallback array
             setProducts(res.data || []); setHasMore(false); toast.success("Matrix parameters updated! 🎛️");
         } catch (error) { toast.error("Failed to compile filters."); } 
         finally { setIsInitialLoading(false); }
     };
 
+    // 🚀 FIX #6: resetFilters no longer calls fetchProductsPage(0) directly.
+    // Instead, incrementing resetKey triggers the useEffect which calls fetchProductsPage(0).
+    // This prevents the double-fetch bug where both direct call + effect fired simultaneously.
     const resetFilters = () => {
         setCategory('All'); setMinPrice(0); setMaxPrice(100000); setSearchQuery('');
-        setIsFiltering(false); setPage(0); setProducts([]); setShowMobileFilters(false); fetchProductsPage(0);
+        setIsFiltering(false); setProducts([]); setShowMobileFilters(false);
+        setPage(0);
+        setResetKey(k => k + 1); // ✅ guarantees re-fetch even if page was already 0
     };
 
     // 🛒 INTERACTIONS
@@ -282,7 +301,6 @@ export default function Products() {
         } catch (err) { toast.error("Transmission failed."); }
     };
 
-    // 🚀 FIX: Added (products || []) to safeguard the .filter function
     let processedProducts = (products || []).filter(p => p?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
     if (sortType === 'priceLow') processedProducts.sort((a, b) => a.price - b.price);
     else if (sortType === 'priceHigh') processedProducts.sort((a, b) => b.price - a.price);
@@ -448,6 +466,11 @@ export default function Products() {
                                 
                                 const displayStock = currentVariant ? currentVariant.variantStock : product.stock;
                                 const displayImage = activeImages[product.id] || (currentVariant?.variantImageUrl || product.imageUrl);
+
+                                // 🚀 FIX #7: Dispatch time was re-randomized on every render causing flicker.
+                                // Now computed once per product using a stable seed (product.id) via useMemo equivalent.
+                                const dispatchHours = ((product.id * 7) % 24) + 1;
+                                const dispatchMins = (product.id * 13) % 60;
                                 
                                 const viewers = activeViewers[product.id] || 3;
 
@@ -475,8 +498,16 @@ export default function Products() {
 
                                             <Link to={`/product/${product.id}`} className="w-full h-full flex items-center justify-center">
                                                 {displayImage ? (
-                                                    <img src={getImageUrl(displayImage)} alt={product.name} className={`h-full w-full object-cover transition-transform duration-700 sm:group-hover:scale-110 ${displayStock === 0 ? 'grayscale opacity-50 dark:opacity-30' : ''}`} loading="lazy"/>
-                                                ) : <div className="text-4xl sm:text-6xl opacity-50 flex items-center justify-center h-full w-full pointer-events-none">📦</div>}
+                                                    <img
+                                                        src={getImageUrl(displayImage)}
+                                                        alt={product.name}
+                                                        className={`h-full w-full object-cover transition-transform duration-700 sm:group-hover:scale-110 ${displayStock === 0 ? 'grayscale opacity-50 dark:opacity-30' : ''}`}
+                                                        loading="lazy"
+                                                        // 🚀 FIX #8: onError fallback — if image fails to load, show placeholder emoji instead of broken img tag
+                                                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex'); }}
+                                                    />
+                                                ) : null}
+                                                <div className="text-4xl sm:text-6xl opacity-50 items-center justify-center h-full w-full pointer-events-none" style={{display: displayImage ? 'none' : 'flex'}}>📦</div>
                                             </Link>
                                         </div>
                                         
@@ -536,7 +567,8 @@ export default function Products() {
                                                     {displayStock > 0 && (
                                                         <div className="text-right">
                                                             <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 tracking-widest uppercase mb-0.5">Est. Dispatch</p>
-                                                            <p className="text-[10px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-wider">{Math.floor(Math.random() * 24 + 1)}h {Math.floor(Math.random() * 60)}m</p>
+                                                            {/* 🚀 FIX #7: Stable deterministic dispatch time based on product.id — no more flicker */}
+                                                            <p className="text-[10px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-wider">{dispatchHours}h {dispatchMins}m</p>
                                                         </div>
                                                     )}
                                                 </div>
