@@ -45,7 +45,7 @@ public class EmailService {
                                 </div>
                             </div>
                             <div style="text-align: center; margin: 40px 0;">
-                                <a href="http://localhost:3000/orders" style="background-color: #0f172a; color: #ffffff; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">Track Your Order</a>
+                                <a href="https://procart-ai-nine.vercel.app/orders" style="background-color: #0f172a; color: #ffffff; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; display: inline-block;">Track Your Order</a>
                             </div>
                             <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 0;">Need support? Just reply directly to this email.</p>
                             <p style="color: #0f172a; font-size: 14px; font-weight: 900; margin-top: 5px;">— The ProCart Team</p>
