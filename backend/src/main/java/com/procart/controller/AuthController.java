@@ -19,7 +19,8 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
-@RequestMapping("https://procart-ai.onrender.com/api/auth/register")
+// 🚀 THE FIX: Restored the relative path so Spring Boot routing doesn't break
+@RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
@@ -136,7 +137,8 @@ public class AuthController {
             user.setResetToken(token);
             userRepository.save(user);
 
-            String resetLink = "http://localhost:3000/reset-password?token=" + token;
+            // 🚀 THE FIX: Sending the live Vercel URL instead of localhost in the email
+            String resetLink = "https://procart-ai-nine.vercel.app/reset-password?token=" + token;
             emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
         }
         return ResponseEntity.ok("If the email is registered, a reset link has been sent.");

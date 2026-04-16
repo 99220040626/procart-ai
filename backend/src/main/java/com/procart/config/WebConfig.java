@@ -13,8 +13,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                // 🚀 THE FIX: Kept your exact phone network IPs!
-                .allowedOrigins("http://localhost:3000", "http://10.2.6.74:3000", "http://10.2.12.143:3000") 
+                // 🚀 THE FIX: Changed to allowedOriginPatterns to accept Vercel traffic dynamically
+                .allowedOriginPatterns("*") 
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

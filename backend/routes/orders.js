@@ -15,40 +15,63 @@ router.post("/", (req, res) => {
     return res.status(400).json({ message: "Invalid order data" });
   }
 
-  const orderSql =
-    "INSERT INTO orders (user_id, total, status) VALUES (?, ?, ?)";
-
-  db.query(orderSql, [userId, total, "Placed"], (err, orderResult) => {
-    if (err) {
-      console.error("ORDER INSERT ERROR:", err);
-      return res.status(500).json({ message: "Order failed" });
+  // 🚀 FIX: Added Database Transaction
+  // If order items fail to save, the entire order is rolled back so you don't get empty ghost orders!
+  db.beginTransaction((transactionErr) => {
+    if (transactionErr) {
+      console.error("TRANSACTION START ERROR:", transactionErr);
+      return res.status(500).json({ message: "Order processing failed to start" });
     }
 
-    const orderId = orderResult.insertId;
+    const orderSql =
+      "INSERT INTO orders (user_id, total, status) VALUES (?, ?, ?)";
 
-    /* ===============================
-       SAVE ORDER ITEMS
-    ================================ */
-    const itemSql =
-      "INSERT INTO order_items (order_id, product_id, name, price, qty) VALUES ?";
-
-    const values = items.map((item) => [
-      orderId,
-      item.id,
-      item.name,
-      item.price,
-      item.qty,
-    ]);
-
-    db.query(itemSql, [values], (err) => {
+    db.query(orderSql, [userId, total, "Placed"], (err, orderResult) => {
       if (err) {
-        console.error("ORDER ITEMS ERROR:", err);
-        return res.status(500).json({ message: "Order items failed" });
+        return db.rollback(() => {
+          console.error("ORDER INSERT ERROR:", err);
+          res.status(500).json({ message: "Order failed" });
+        });
       }
 
-      res.json({
-        message: "Order placed successfully",
+      const orderId = orderResult.insertId;
+
+      /* ===============================
+         SAVE ORDER ITEMS
+      ================================ */
+      const itemSql =
+        "INSERT INTO order_items (order_id, product_id, name, price, qty) VALUES ?";
+
+      const values = items.map((item) => [
         orderId,
+        item.id,
+        item.name,
+        item.price,
+        item.qty,
+      ]);
+
+      db.query(itemSql, [values], (err) => {
+        if (err) {
+          return db.rollback(() => {
+            console.error("ORDER ITEMS ERROR:", err);
+            res.status(500).json({ message: "Order items failed" });
+          });
+        }
+
+        // 🚀 FIX: Commit the transaction only if BOTH queries succeed
+        db.commit((commitErr) => {
+          if (commitErr) {
+            return db.rollback(() => {
+              console.error("COMMIT ERROR:", commitErr);
+              res.status(500).json({ message: "Failed to finalize order" });
+            });
+          }
+
+          res.json({
+            message: "Order placed successfully",
+            orderId,
+          });
+        });
       });
     });
   });

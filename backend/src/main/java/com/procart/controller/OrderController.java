@@ -321,7 +321,8 @@ public class OrderController {
 
             // 🛰️ NON-BLOCKING EMAIL
             try {
-                String trackingLink = "http://localhost:3000/register"; 
+                // 🚀 THE FIX: Update guest tracking link to production Vercel URL
+                String trackingLink = "https://procart-ai-nine.vercel.app/register"; 
                 emailService.sendGuestReceiptAndTracking(email, summary.toString(), totalSpent, trackingLink);
             } catch (Exception e) {
                 System.err.println("SMTP Timeout: Guest Order successful, Email blocked.");

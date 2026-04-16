@@ -45,7 +45,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers(
-                    "https://procart-ai.onrender.com/api/auth/register/**", "/api/products/**", "/uploads/**", "/api/orders/**", 
+                    // 🚀 THE FIX: Removed the https://procart... URL and put it back to normal relative paths
+                    "/api/auth/**", "/api/products/**", "/uploads/**", "/api/orders/**", 
                     "/api/promo/**", "/api/email/**", "/api/analytics/**", "/ws/**", 
                     "/api/payment/**", "/api/qa/**", "/api/chat/**", "/api/voice/**",
                     "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"    
@@ -63,7 +64,8 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(allowedOrigins); 
+        // 🚀 THE FIX: Allow ANY origin pattern (including Vercel) instead of just the fixed list
+        config.setAllowedOriginPatterns(List.of("*")); 
         config.setAllowedHeaders(List.of("*")); 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         source.registerCorsConfiguration("/**", config);

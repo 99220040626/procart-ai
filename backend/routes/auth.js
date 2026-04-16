@@ -20,11 +20,14 @@ router.post("/register", async (req, res) => {
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // 🚀 FIX: Ensure email is stored in lowercase so login matching works perfectly
+    const safeEmail = email.toLowerCase(); 
 
     const sql =
       "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
 
-    db.query(sql, [name, email, hashedPassword], (err) => {
+    db.query(sql, [name, safeEmail, hashedPassword], (err) => {
       if (err) {
         console.log("DB ERROR:", err);
         return res.status(400).json({ message: "User already exists" });
@@ -57,9 +60,12 @@ router.post("/login", (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // 🚀 FIX: Use environment variable for JWT secret in production
+    const jwtSecret = process.env.JWT_SECRET || "SECRET_KEY";
+
     const token = jwt.sign(
       { id: user.id },
-      "SECRET_KEY",
+      jwtSecret,
       { expiresIn: "1d" }
     );
 

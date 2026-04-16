@@ -39,7 +39,8 @@ public class PaymentController {
             payload.put("merchantTransactionId", transactionId);
             payload.put("merchantUserId", userId);
             payload.put("amount", amount);
-            payload.put("redirectUrl", "http://localhost:3000/cart"); 
+            // 🚀 THE FIX: Tell PhonePe to redirect to your Vercel site after payment
+            payload.put("redirectUrl", "https://procart-ai-nine.vercel.app/cart"); 
             payload.put("redirectMode", "REDIRECT");
             payload.put("callbackUrl", "https://webhook.site/callback"); 
             payload.put("paymentInstrument", Map.of("type", "PAY_PAGE"));
