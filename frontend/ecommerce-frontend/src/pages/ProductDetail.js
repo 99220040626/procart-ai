@@ -13,9 +13,9 @@ const BACKEND_URL = 'https://procart-ai.onrender.com';
 
 const getImageUrl = (url) => {
     if (!url) return FALLBACK_IMAGE;
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image')) {
-        return url;
-    }
+    // Handle external links and Base64
+    if (url.startsWith('http') || url.startsWith('data:image')) return url;
+    // Fix: Route relative uploads to the active backend server instead of Vercel frontend
     return `${BACKEND_URL}/uploads/${url}`;
 };
 
@@ -328,6 +328,13 @@ function ProductDetail() {
     if (loading) return <ProductSkeleton />;
     if (!product) return null;
 
+    // Resolve accurate description to avoid empty text areas
+    const resolvedDescription = (product.detailedDescription && product.detailedDescription.trim() !== '') 
+        ? product.detailedDescription 
+        : (product.description && product.description.trim() !== '') 
+            ? product.description 
+            : "Detailed specifications not provided. Please contact support for more information regarding this asset.";
+
     return (
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -441,7 +448,7 @@ function ProductDetail() {
                         <div className="p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
                             <div className="mb-6 flex flex-wrap items-center gap-3">
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white bg-neutral-100 dark:bg-white/10 px-4 py-1.5 rounded-full border border-neutral-200 dark:border-white/10">
-                                    {product.category}
+                                    {product.category || 'N/A'}
                                 </span>
                                 <div className="flex items-center gap-1.5 bg-neutral-900 dark:bg-white px-3 py-1.5 rounded-full">
                                     <span className="text-white dark:text-black text-[10px]">★</span>
@@ -457,7 +464,7 @@ function ProductDetail() {
                             
                             <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 mb-8">
                                 <span className="text-4xl sm:text-5xl lg:text-5xl font-medium text-neutral-900 dark:text-white tracking-tight">
-                                    ₹{product.price?.toLocaleString('en-IN')}
+                                    ₹{product.price?.toLocaleString('en-IN') || '0'}
                                 </span>
                                 {product.stock > 0 ? (
                                     <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 flex items-center gap-2">
@@ -469,7 +476,7 @@ function ProductDetail() {
                             </div>
                             
                             <p className="text-neutral-500 dark:text-neutral-400 text-base sm:text-lg mb-12 font-medium leading-relaxed">
-                                {product.shortDescription || "Experience unparalleled quality and design. Crafted for those who demand the best."}
+                                {product.shortDescription || product.description || "Experience unparalleled quality and design. Crafted for those who demand the best."}
                             </p>
                             
                             <hr className="border-neutral-200 dark:border-white/[0.05] mb-10" />
@@ -517,7 +524,7 @@ function ProductDetail() {
                         <div className="lg:col-span-2">
                             <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-6">Overview</h3>
                             <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed text-base sm:text-lg whitespace-pre-line font-medium">
-                                {product.detailedDescription || product.description || "Detailed specifications not provided."}
+                                {resolvedDescription}
                             </p>
                         </div>
                         
@@ -530,7 +537,7 @@ function ProductDetail() {
                                 </div>
                                 <div className="flex justify-between items-center border-b border-neutral-200 dark:border-white/5 pb-5">
                                     <span className="text-xs font-bold text-neutral-500">CATEGORY</span>
-                                    <span className="text-sm font-medium uppercase tracking-wider">{product.category}</span>
+                                    <span className="text-sm font-medium uppercase tracking-wider">{product.category || 'N/A'}</span>
                                 </div>
                                 <div className="flex justify-between items-center border-b border-neutral-200 dark:border-white/5 pb-5">
                                     <span className="text-xs font-bold text-neutral-500">MODEL YEAR</span>
@@ -538,7 +545,7 @@ function ProductDetail() {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs font-bold text-neutral-500">SKU</span>
-                                    <span className="text-sm font-medium uppercase">{product._id?.substring(0,8) || 'N/A'}</span>
+                                    <span className="text-sm font-medium uppercase">{product._id?.substring(0,8) || product.id?.substring(0,8) || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
@@ -551,7 +558,7 @@ function ProductDetail() {
                 <div className="flex flex-col">
                     <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Total</span>
                     <span className="text-xl font-medium text-neutral-900 dark:text-white">
-                        ₹{(product.price * quantity).toLocaleString('en-IN')}
+                        ₹{(product.price * quantity).toLocaleString('en-IN') || '0'}
                     </span>
                 </div>
                 <button 
