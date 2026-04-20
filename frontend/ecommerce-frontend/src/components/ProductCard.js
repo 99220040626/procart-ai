@@ -1,3 +1,4 @@
+// ProductCard.jsx
 import React, { useState, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext'; 
@@ -7,14 +8,14 @@ import { motion } from 'framer-motion';
 // ==========================================
 // 🧩 CONSTANTS & HELPERS
 // ==========================================
+const BACKEND_URL = 'https://procart-ai.onrender.com';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?q=80&w=800&auto=format&fit=crop';
 
 const getImageUrl = (url) => {
     if (!url) return FALLBACK_IMAGE;
-    // Check if it's already a full URL or Base64
     if (url.startsWith('http') || url.startsWith('data:image')) return url;
-    // Route to relative uploads directory handled by the backend / static server
-    return `/uploads/${url}`;
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    return `${BACKEND_URL}/uploads/${cleanUrl}`;
 };
 
 // ==========================================
@@ -83,7 +84,9 @@ function ProductCard({ product }) {
                     src={imgSrc} 
                     alt={product.name || 'Product View'} 
                     onLoad={() => setIsLoaded(true)}
-                    onError={() => {
+                    onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = FALLBACK_IMAGE;
                         setImgSrc(FALLBACK_IMAGE);
                         setIsLoaded(true);
                     }}

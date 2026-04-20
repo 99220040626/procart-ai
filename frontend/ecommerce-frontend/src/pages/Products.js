@@ -1,3 +1,4 @@
+// Products.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom'; 
 import API from '../services/api';
@@ -6,11 +7,21 @@ import toast from 'react-hot-toast';
 import { OfflineStorage } from '../services/OfflineStorage';
 
 // ==========================================
+// 🌌 CONSTANTS & CONFIG
+// ==========================================
+const BACKEND_URL = 'https://procart-ai.onrender.com';
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?q=80&w=800&auto=format&fit=crop';
+
+const getImageUrl = (url) => {
+    if (!url) return FALLBACK_IMAGE;
+    if (url.startsWith('http') || url.startsWith('data:image')) return url;
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    return `${BACKEND_URL}/uploads/${cleanUrl}`;
+};
+
+// ==========================================
 // 🌌 CORE OBSERVATION HOOKS
 // ==========================================
-
-// 🚀 FIX #1: options object was recreated on every render causing infinite useEffect loop
-// Solution: hardcode the options inside the effect so the dependency array stays stable
 const useIntersectionObserver = () => {
     const [isVisible, setIsVisible] = useState(false);
     const domRef = useRef(null);
@@ -21,15 +32,13 @@ const useIntersectionObserver = () => {
         const currentRef = domRef.current;
         if (currentRef) observer.observe(currentRef);
         return () => { if (currentRef) observer.unobserve(currentRef); };
-    }, []); // ✅ stable empty dep array — options are now literals inside the effect
+    }, []); 
     return [domRef, isVisible];
 };
 
 // ==========================================
 // 🧩 PREMIUM MICRO-COMPONENTS
 // ==========================================
-
-// 🚀 FIX #2: Move SCRAMBLE_CHARS outside component so it's not re-created on every render
 const SCRAMBLE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
 
 const ScrambleText = ({ text }) => {
@@ -48,7 +57,7 @@ const ScrambleText = ({ text }) => {
             iteration += 1 / 3; 
         }, 30);
         return () => clearInterval(interval);
-    }, [isHovered, text]); // ✅ chars no longer a dependency (it's a module-level constant)
+    }, [isHovered, text]); 
 
     return <span onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} className="inline-block transition-all">{displayText}</span>;
 };
@@ -105,21 +114,16 @@ const SkeletonCard = ({ viewMode }) => (
 // ==========================================
 // 🚀 MAIN PRODUCTS COMPONENT
 // ==========================================
-
 export default function Products() {
-    // Core State
     const [products, setProducts] = useState([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
     
-    // UI State
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [viewMode, setViewMode] = useState('grid'); 
     
-    // Simulated Live Data
     const [activeViewers, setActiveViewers] = useState({});
     
-    // Filters & Sorting
     const [searchQuery, setSearchQuery] = useState('');
     const [sortType, setSortType] = useState('newest');
     const [wishlist, setWishlist] = useState([]); 
@@ -128,20 +132,15 @@ export default function Products() {
     const [maxPrice, setMaxPrice] = useState(100000);
     const [availableCategories, setAvailableCategories] = useState(['All', 'Electronics', 'Clothing', 'Home', 'Accessories']);
 
-    // Pagination
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [isFiltering, setIsFiltering] = useState(false);
-
-    // 🚀 FIX #3: resetKey forces re-fetch when resetFilters is called but page is already 0
     const [resetKey, setResetKey] = useState(0);
 
-    // Q&A Modal
     const [qaModalProduct, setQaModalProduct] = useState(null); 
     const [qaList, setQaList] = useState([]); 
     const [newQuestion, setNewQuestion] = useState("");
 
-    // Variant Selection
     const [selectedColors, setSelectedColors] = useState({});
     const [selectedSizes, setSelectedSizes] = useState({});
     const [activeImages, setActiveImages] = useState({});
@@ -149,22 +148,6 @@ export default function Products() {
     const { addToCart } = useCart();
     const userId = localStorage.getItem('userId');
 
-    // 🚀 FIX #4: IMAGE URL FIX
-    // The API base URL must prefix relative image paths.
-    // Previously: `/uploads/${imageName}` — this points to the frontend domain (Vercel), not the backend.
-    // Fix: use the API base URL for relative paths, and pass through absolute URLs unchanged.
-    const getImageUrl = (imageName) => {
-        if (!imageName) return null;
-        // Already a full URL (http/https) — return as-is
-        if (imageName.startsWith('http://') || imageName.startsWith('https://')) return imageName;
-        // Already a root-relative path starting with /uploads — prefix with API base URL
-        const apiBase = (API.defaults?.baseURL || '').replace(/\/api$/, '').replace(/\/$/, '');
-        if (imageName.startsWith('/')) return `${apiBase}${imageName}`;
-        // Bare filename — build the full backend uploads path
-        return `${apiBase}/uploads/${imageName}`;
-    };
-
-    // 📡 API FETCH LOGIC
     const fetchProductsPage = useCallback(async (pageNumber) => {
         if (pageNumber === 0) setIsInitialLoading(true);
         else setIsFetchingNextPage(true); 
@@ -200,7 +183,6 @@ export default function Products() {
         } catch (error) { console.error("Wishlist sync failed", error); }
     }, [userId]);
 
-    // 🚀 FIX #5: Added resetKey to dependency array so resetting to page 0 always re-fetches
     useEffect(() => { if (!isFiltering) fetchProductsPage(page); }, [page, isFiltering, fetchProductsPage, resetKey]);
     useEffect(() => { fetchWishlist(); }, [fetchWishlist]);
 
@@ -214,7 +196,6 @@ export default function Products() {
         if (node) observer.current.observe(node);
     }, [isInitialLoading, isFetchingNextPage, hasMore, isFiltering]);
 
-    // 🎛️ FILTER LOGIC
     const applyFilters = async () => {
         setIsInitialLoading(true); setIsFiltering(true); setShowMobileFilters(false);
         try {
@@ -224,17 +205,13 @@ export default function Products() {
         finally { setIsInitialLoading(false); }
     };
 
-    // 🚀 FIX #6: resetFilters no longer calls fetchProductsPage(0) directly.
-    // Instead, incrementing resetKey triggers the useEffect which calls fetchProductsPage(0).
-    // This prevents the double-fetch bug where both direct call + effect fired simultaneously.
     const resetFilters = () => {
         setCategory('All'); setMinPrice(0); setMaxPrice(100000); setSearchQuery('');
         setIsFiltering(false); setProducts([]); setShowMobileFilters(false);
         setPage(0);
-        setResetKey(k => k + 1); // ✅ guarantees re-fetch even if page was already 0
+        setResetKey(k => k + 1); 
     };
 
-    // 🛒 INTERACTIONS
     const handleAddToCart = async (product, selectedVariant = null) => {
         const currentStock = selectedVariant ? selectedVariant.variantStock : product.stock;
         if (currentStock <= 0) return toast.error("Asset unavailable. Stock depleted.");
@@ -267,7 +244,7 @@ export default function Products() {
                 setWishlist(wishlist.filter(id => id !== productId));
                 toast("Asset removed from watchlist.");
             } else {
-                await API.post('/wishlist', { userId: parseInt(userId), productId: productId });
+                await API.post('/wishlist', { userId: parseInt(userId, 10), productId: productId });
                 setWishlist([...wishlist, productId]);
                 toast.success("Asset tagged to watchlist! 🎯");
             }
@@ -277,7 +254,7 @@ export default function Products() {
     const handleAddReview = async (productId, rating) => {
         if (!userId) return toast.error("Authentication required.");
         try {
-            await API.post('/reviews', { userId: parseInt(userId), productId: productId, rating: rating, comment: "Quick Rating" });
+            await API.post('/reviews', { userId: parseInt(userId, 10), productId: productId, rating: rating, comment: "Quick Rating" });
             toast.success(`Telemetry recorded: ${rating} Stars ⭐`);
             if(isFiltering) applyFilters(); else fetchProductsPage(0); 
         } catch (error) { toast.error("Transmission failed."); }
@@ -295,7 +272,7 @@ export default function Products() {
         e.preventDefault();
         if (!userId) return toast.error("Authentication required.");
         try {
-            await API.post('/qa/ask', { productId: qaModalProduct.id, userId: parseInt(userId), customerName: "Operative", question: newQuestion });
+            await API.post('/qa/ask', { productId: qaModalProduct.id, userId: parseInt(userId, 10), customerName: "Operative", question: newQuestion });
             toast.success("Transmission sent to Command Center.");
             setNewQuestion(""); openQaModal(qaModalProduct); 
         } catch (err) { toast.error("Transmission failed."); }
@@ -353,7 +330,7 @@ export default function Products() {
                 </div>
             </div>
 
-            {/* 📱 MOBILE ACTION BAR (iOS Sticky Style) */}
+            {/* 📱 MOBILE ACTION BAR */}
             <div className="relative z-40 lg:hidden flex gap-2 mb-6 sticky top-[64px] sm:top-[80px] bg-[#f8fafc]/90 dark:bg-[#000]/90 backdrop-blur-xl py-3 px-4 -mx-4 border-b border-gray-200 dark:border-white/[0.05]">
                 <div className="relative flex-1 group">
                     <span className="absolute left-4 top-3.5 text-gray-400 dark:text-gray-500 text-sm">🔍</span>
@@ -364,11 +341,10 @@ export default function Products() {
 
             <div className="relative z-10 max-w-[100rem] mx-auto flex flex-col lg:flex-row gap-8 px-4 sm:px-6 lg:px-8">
                 
-                {/* 🎛️ COMMAND CONSOLE (Mobile Bottom Sheet & Desktop Sidebar) */}
+                {/* 🎛️ COMMAND CONSOLE */}
                 <div className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:relative lg:bg-transparent lg:z-0 transition-opacity duration-300 ${showMobileFilters ? 'opacity-100 visible' : 'opacity-0 invisible lg:opacity-100 lg:visible'}`}>
                     <div className={`absolute bottom-0 w-full h-[85vh] bg-white dark:bg-[#050505] rounded-t-[2.5rem] lg:relative lg:h-auto lg:w-72 lg:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl lg:shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.9)] border border-gray-100 dark:border-white/[0.05] lg:sticky lg:top-28 transition-transform duration-300 transform ${showMobileFilters ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'} flex flex-col`}>
                         
-                        {/* Mobile Drag Handle */}
                         <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-6 lg:hidden"></div>
 
                         <div className="flex justify-between items-center mb-6">
@@ -467,8 +443,6 @@ export default function Products() {
                                 const displayStock = currentVariant ? currentVariant.variantStock : product.stock;
                                 const displayImage = activeImages[product.id] || (currentVariant?.variantImageUrl || product.imageUrl);
 
-                                // 🚀 FIX #7: Dispatch time was re-randomized on every render causing flicker.
-                                // Now computed once per product using a stable seed (product.id) via useMemo equivalent.
                                 const dispatchHours = ((product.id * 7) % 24) + 1;
                                 const dispatchMins = (product.id * 13) % 60;
                                 
@@ -485,7 +459,7 @@ export default function Products() {
                                                 <svg className={`w-4 h-4 sm:w-5 sm:h-5 ${isSaved ? 'text-red-500 fill-current drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]' : 'text-gray-400 dark:text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                                             </button>
 
-                                            <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-30 bg-black/70 backdrop-blur-md border border-white/10 text-white text-[8px] sm:text-[9px] font-bold tracking-widest px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                            <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-30 bg-black/70 backdrop-blur-md border border-white/10 text-white text-[8px] sm:text-[9px] font-bold tracking-widest px-2.5 py-1 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping"></span> {viewers} VIEWING
                                             </div>
 
@@ -503,8 +477,10 @@ export default function Products() {
                                                         alt={product.name}
                                                         className={`h-full w-full object-cover transition-transform duration-700 sm:group-hover:scale-110 ${displayStock === 0 ? 'grayscale opacity-50 dark:opacity-30' : ''}`}
                                                         loading="lazy"
-                                                        // 🚀 FIX #8: onError fallback — if image fails to load, show placeholder emoji instead of broken img tag
-                                                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'flex'); }}
+                                                        onError={(e) => { 
+                                                            e.currentTarget.onerror = null; 
+                                                            e.currentTarget.src = FALLBACK_IMAGE; 
+                                                        }}
                                                     />
                                                 ) : null}
                                                 <div className="text-4xl sm:text-6xl opacity-50 items-center justify-center h-full w-full pointer-events-none" style={{display: displayImage ? 'none' : 'flex'}}>📦</div>
@@ -567,7 +543,6 @@ export default function Products() {
                                                     {displayStock > 0 && (
                                                         <div className="text-right">
                                                             <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 tracking-widest uppercase mb-0.5">Est. Dispatch</p>
-                                                            {/* 🚀 FIX #7: Stable deterministic dispatch time based on product.id — no more flicker */}
                                                             <p className="text-[10px] sm:text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-wider">{dispatchHours}h {dispatchMins}m</p>
                                                         </div>
                                                     )}

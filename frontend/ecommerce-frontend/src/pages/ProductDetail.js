@@ -1,3 +1,4 @@
+// ProductDetail.jsx
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API from '../services/api';
@@ -8,15 +9,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ==========================================
 // 🧩 CONSTANTS & HELPERS
 // ==========================================
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?q=80&w=800&auto=format&fit=crop';
 const BACKEND_URL = 'https://procart-ai.onrender.com';
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?q=80&w=800&auto=format&fit=crop';
 
 const getImageUrl = (url) => {
     if (!url) return FALLBACK_IMAGE;
-    // Handle external links and Base64
     if (url.startsWith('http') || url.startsWith('data:image')) return url;
-    // Fix: Route relative uploads to the active backend server instead of Vercel frontend
-    return `${BACKEND_URL}/uploads/${url}`;
+    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    return `${BACKEND_URL}/uploads/${cleanUrl}`;
 };
 
 // ==========================================
@@ -87,7 +87,12 @@ const ImageMagnifier = memo(({ src, alt, isFading }) => {
                 src={imgSrc} 
                 alt={alt} 
                 onLoad={() => setIsLoaded(true)}
-                onError={() => { setImgSrc(FALLBACK_IMAGE); setIsLoaded(true); }}
+                onError={(e) => { 
+                    e.target.onerror = null; 
+                    e.target.src = FALLBACK_IMAGE;
+                    setImgSrc(FALLBACK_IMAGE);
+                    setIsLoaded(true); 
+                }}
                 className={`w-full h-full object-contain transition-opacity duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
                 loading="eager" 
                 decoding="async"
@@ -176,7 +181,7 @@ const FullScreenGalleryModal = memo(({ images, startIndex, onClose }) => {
                             alt="Full Screen Product View" 
                             className="max-w-full max-h-full object-contain drop-shadow-2xl" 
                             loading="lazy"
-                            onError={(e) => e.target.src = FALLBACK_IMAGE}
+                            onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }}
                         />
                     </motion.div>
                 </AnimatePresence>
@@ -194,7 +199,7 @@ const FullScreenGalleryModal = memo(({ images, startIndex, onClose }) => {
                             onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }} 
                             className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 transition-all border-2 ${currentIndex === idx ? 'border-white scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]' : 'border-transparent hover:border-white/30 opacity-50 hover:opacity-100'}`}
                         >
-                            <img src={getImageUrl(img)} alt="Thumbnail" className="w-full h-full object-cover" loading="lazy" onError={(e) => e.target.src = FALLBACK_IMAGE} />
+                            <img src={getImageUrl(img)} alt="Thumbnail" className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} />
                         </button>
                     ))}
                 </div>
@@ -435,7 +440,7 @@ function ProductDetail() {
                                                     onClick={() => handleImageSwap(img)} 
                                                     className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-[1.25rem] overflow-hidden flex-shrink-0 snap-center transition-all duration-300 border bg-white dark:bg-neutral-900 ${isActive ? 'border-neutral-900 dark:border-white shadow-lg scale-[1.02]' : 'border-neutral-200 dark:border-neutral-800 opacity-60 hover:opacity-100 hover:border-neutral-400 dark:hover:border-neutral-600'}`}
                                                 >
-                                                    <img src={getImageUrl(img)} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => e.target.src = FALLBACK_IMAGE} />
+                                                    <img src={getImageUrl(img)} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} />
                                                 </button>
                                             );
                                         })}
@@ -545,7 +550,7 @@ function ProductDetail() {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs font-bold text-neutral-500">SKU</span>
-                                    <span className="text-sm font-medium uppercase">{product._id?.substring(0,8) || product.id?.substring(0,8) || 'N/A'}</span>
+                                    <span className="text-sm font-medium uppercase">{product._id?.substring(0,8) || product.id?.toString().substring(0,8) || 'N/A'}</span>
                                 </div>
                             </div>
                         </div>
