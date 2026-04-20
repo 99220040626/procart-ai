@@ -1,5 +1,4 @@
-// ProductDetail.jsx
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -15,7 +14,8 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1560393464-5c69a73c577
 const getImageUrl = (url) => {
     if (!url) return FALLBACK_IMAGE;
     if (url.startsWith('http') || url.startsWith('data:image')) return url;
-    const cleanUrl = url.startsWith('/') ? url.substring(1) : url;
+    // Strip leading slashes and any duplicate "uploads/" paths to ensure clean routing
+    const cleanUrl = url.replace(/^(\/?uploads\/|\/)/, '');
     return `${BACKEND_URL}/uploads/${cleanUrl}`;
 };
 
@@ -60,11 +60,19 @@ const ImageMagnifier = memo(({ src, alt, isFading }) => {
     const [showMagnifier, setShowMagnifier] = useState(false);
     const [imgSrc, setImgSrc] = useState(src);
     const [isLoaded, setIsLoaded] = useState(false);
+    const imgRef = useRef(null);
 
     useEffect(() => {
         setImgSrc(src);
         setIsLoaded(false);
     }, [src]);
+
+    // Fast-path resolution for cached images preventing white-screen lock
+    useEffect(() => {
+        if (imgRef.current && imgRef.current.complete) {
+            setIsLoaded(true);
+        }
+    }, [imgSrc]);
 
     const handleMouseMove = useCallback((e) => {
         const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -75,25 +83,24 @@ const ImageMagnifier = memo(({ src, alt, isFading }) => {
 
     return (
         <div 
-            className={`relative w-full h-full overflow-hidden transition-all duration-500 ease-in-out ${isFading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} cursor-crosshair rounded-[2rem]`}
+            className={`relative w-full h-full overflow-hidden transition-all duration-500 ease-in-out ${isFading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} cursor-crosshair rounded-[2rem] bg-white dark:bg-[#0a0a0a]`}
             onMouseEnter={() => setShowMagnifier(true)}
             onMouseLeave={() => setShowMagnifier(false)}
             onMouseMove={handleMouseMove}
         >
-            {!isLoaded && (
-                <div className="absolute inset-0 bg-neutral-200 dark:bg-neutral-800 animate-pulse rounded-[2rem]" />
-            )}
+            {/* Smooth Shimmer Overlay */}
+            <div className={`absolute inset-0 bg-neutral-100 dark:bg-neutral-800 rounded-[2rem] z-10 transition-opacity duration-700 pointer-events-none ${isLoaded ? 'opacity-0' : 'opacity-100 animate-pulse'}`} />
+            
             <img 
+                ref={imgRef}
                 src={imgSrc} 
                 alt={alt} 
                 onLoad={() => setIsLoaded(true)}
-                onError={(e) => { 
-                    e.target.onerror = null; 
-                    e.target.src = FALLBACK_IMAGE;
-                    setImgSrc(FALLBACK_IMAGE);
+                onError={() => { 
+                    setImgSrc(FALLBACK_IMAGE); 
                     setIsLoaded(true); 
                 }}
-                className={`w-full h-full object-contain transition-opacity duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                className="w-full h-full object-contain relative z-0" 
                 loading="eager" 
                 decoding="async"
             />
@@ -262,7 +269,8 @@ function ProductDetail() {
                 setLoading(true);
                 const res = await API.get(`/products/${id}`);
                 setProduct(res.data);
-                setMainImage(res.data.imageUrl);
+                // Set the initial image resolving fallbacks properly
+                setMainImage(res.data.imageUrl || '');
                 setActiveViewers(Math.floor(Math.random() * 45) + 5); 
             } catch (err) {
                 toast.error("Product not found!");
