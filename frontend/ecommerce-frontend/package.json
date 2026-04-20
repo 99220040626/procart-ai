@@ -19,6 +19,7 @@
     "ajv": "^8.18.0",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.13.6",
+    "framer-motion": "^12.38.0",
     "i18next": "^25.8.18",
     "i18next-browser-languagedetector": "^8.2.1",
     "idb": "^8.0.3",
